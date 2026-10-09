@@ -265,6 +265,7 @@ label.inl select { max-width: 260px; }
   #rep-preview { position: absolute; left: 0; top: 0; width: 100%; padding: 0; }
 }
 
+/*
 /* Asigură că topbar-ul permite poziționarea pe centru */
 .topbar {
   position: relative;
@@ -316,6 +317,7 @@ label.inl select { max-width: 260px; }
   letter-spacing: 0.5px;
   background: linear-gradient(135deg, #ffffff 0%, #38bdf8 100%);
   -webkit-background-clip: text;
+  */
   -webkit-text-fill-color: transparent;
   padding-right: 1px;
 }

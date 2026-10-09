@@ -1,0 +1,468 @@
+<!doctype html>
+<html lang="ro">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0b1220">
+<title>FordDiag OBD2</title>
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div class="sticky-head">
+<header class="topbar">
+  <div class="brand"><img src="icon.svg" alt="" width="28" height="28"><span>FordDiag <small>OBD2 · 2007–2010</small></span></div>
+
+  <!-- Badge Centrat Premium -->
+  <div class="author-badge">
+    <span class="badge-dot"></span>
+    <span class="badge-label">Creat de</span>
+    <span class="badge-name">Cristi</span>
+  </div>
+
+  <div class="status">
+    <span id="st-conn" class="pill off">Deconectat</span>
+    <span id="st-volt" class="pill">— V</span>
+    <span id="st-mil" class="pill">MIL —</span>
+  </div>
+</header>
+
+<!-- linia 1: categorii -->
+<nav class="groups" id="groups" aria-label="Categorii">
+  <button data-group="conn" class="active"><span class="gi">🔌</span><span class="gl">Conectare</span></button>
+  <button data-group="diag"><span class="gi">🩺</span><span class="gl">Diagnoză</span><span class="gbadge hidden" id="gb-diag"></span></button>
+  <button data-group="data"><span class="gi">📈</span><span class="gl">Date & teste</span></button>
+  <button data-group="veh"><span class="gi">🚗</span><span class="gl">Vehicul & rapoarte</span></button>
+</nav>
+
+<!-- linia 2: secțiunile categoriei alese -->
+<nav class="tabs" id="tabs" aria-label="Secțiuni">
+  <button data-group="conn" data-tab="conn" class="active">Conexiune</button>
+  <button data-group="conn" data-tab="term">Terminal</button>
+  <button data-group="conn" data-tab="set">Setări</button>
+
+  <button data-group="diag" data-tab="dash">Panou</button>
+  <button data-group="diag" data-tab="ai">Analiză</button>
+  <button data-group="diag" data-tab="dtc">Coduri <span class="tbadge hidden" id="tb-dtc"></span></button>
+  <button data-group="diag" data-tab="mods">Module Ford <span class="tbadge hidden" id="tb-mods"></span></button>
+  <button data-group="diag" data-tab="ff">Freeze frame</button>
+  <button data-group="diag" data-tab="ready">Readiness</button>
+
+  <button data-group="data" data-tab="live">Date live</button>
+  <button data-group="data" data-tab="tests">Teste ghidate</button>
+  <button data-group="data" data-tab="trip">Trip & performanță</button>
+  <button data-group="data" data-tab="ext">PID-uri extinse</button>
+
+  <button data-group="veh" data-tab="info">Info vehicul</button>
+  <button data-group="veh" data-tab="rep">Raport</button>
+  <button data-group="veh" data-tab="hist">Istoric</button>
+</nav>
+</div>
+
+<main>
+  <!-- CONEXIUNE -->
+  <section id="tab-conn" class="tab active">
+    <h2>Conectare adaptor ELM327</h2>
+    <div class="grid2">
+      <div class="card">
+        <label>Tip conexiune</label>
+        <div class="seg" id="conn-type">
+          <button data-v="serial" class="active">Bluetooth clasic / COM</button>
+          <button data-v="ble">Bluetooth LE</button>
+          <button data-v="demo">Demo (fără mașină)</button>
+        </div>
+        <label for="proto">Protocol</label>
+        <select id="proto">
+          <option value="0">Automat (recomandat)</option>
+          <option value="6">ISO 15765-4 CAN 11bit 500k — HS-CAN Ford (2008+)</option>
+          <option value="1">SAE J1850 PWM — Ford SUA până în 2007</option>
+          <option value="3">ISO 9141-2</option>
+          <option value="4">ISO 14230-4 KWP (5 baud)</option>
+          <option value="5">ISO 14230-4 KWP (rapid)</option>
+          <option value="7">ISO 15765-4 CAN 29bit 500k</option>
+          <option value="8">ISO 15765-4 CAN 11bit 250k</option>
+        </select>
+        <p class="muted" id="conn-type-hint"></p>
+        <div class="row">
+          <button id="btn-connect" class="primary">Conectare</button>
+          <button id="btn-reconnect" class="hidden">🔄 Reconectare</button>
+          <button id="btn-disconnect" disabled>Deconectare</button>
+        </div>
+        <div id="conn-progress" class="conn-msg"></div>
+      </div>
+      <div class="card">
+        <h3>Stare</h3>
+        <table class="kv" id="conn-info">
+          <tr><th>Adaptor</th><td>—</td></tr>
+          <tr><th>Legătură</th><td>—</td></tr>
+          <tr><th>Protocol</th><td>—</td></tr>
+          <tr><th>Tensiune baterie</th><td>—</td></tr>
+          <tr><th>Funcții adaptor</th><td>—</td></tr>
+        </table>
+        <div id="compat" class="note"></div>
+      </div>
+    </div>
+    <div class="card">
+      <h3>Cum conectez?</h3>
+      <ol class="help">
+        <li>Introduceți adaptorul ELM327 în priza OBD2 (sub volan, stânga), puneți contactul pe <b>ON</b> (sau porniți motorul).</li>
+        <li><b>Windows + adaptor Bluetooth clasic</b> (majoritatea ELM327 ieftine): împerecheați adaptorul din Setări Windows → Bluetooth (PIN 1234 sau 0000). Windows creează <b>două</b> porturi COM; în fereastra de selecție alegeți portul marcat „Outgoing / Ieșire” sau „Standard Serial over Bluetooth link” cu numărul mai mic. Dacă adaptorul nu răspunde, încercați celălalt port.</li>
+        <li><b>Android</b>: cu un adaptor <b>Bluetooth LE</b> (Vgate iCar Pro BLE, Veepeak BLE+, OBDLink CX) alegeți „Bluetooth LE” — porniți Bluetooth și Locația. Cu un adaptor Bluetooth clasic: împerecheați-l din setările telefonului, apoi alegeți „Bluetooth clasic / COM” (necesită Chrome pentru Android actualizat).</li>
+        <li>Nu știți ce tip de adaptor aveți? Dacă apare în setările Bluetooth și cere PIN la împerechere → <b>clasic</b>. Dacă nu apare acolo, dar apare la „Bluetooth LE” → <b>BLE</b>.</li>
+        <li>Adaptorul poate fi conectat la o singură aplicație odată — închideți Torque, Car Scanner, FORScan etc.</li>
+        <li>Pentru modulele de pe <b>MS-CAN</b> (bord, climă, audio, uși pe Focus/Mondeo/S-Max/Kuga) aveți nevoie de un adaptor cu comutator HS/MS-CAN sau OBDLink — vezi fila Setări.</li>
+      </ol>
+    </div>
+  </section>
+
+  <!-- PANOU -->
+  <section id="tab-dash" class="tab">
+    <div class="row between"><h2>Panou</h2><button id="btn-fullscan" class="primary needs-conn">🔍 Scanare completă</button></div>
+    <div class="card">
+      <div class="row">
+        <label class="inl">Vehicul <select id="prof-veh"></select></label>
+        <label class="inl">Motor <select id="prof-eng"></select></label>
+        <span id="prof-hint" class="muted"></span>
+      </div>
+      <div class="row">
+        <label class="chk"><input type="checkbox" id="scan-ms"> Include MS-CAN în scanarea completă (adaptor cu comutator)</label>
+        <label class="chk"><input type="checkbox" id="scan-autosave" checked> Salvează automat în istoric</label>
+      </div>
+    </div>
+    <div class="tiles" id="dash-tiles"></div>
+    <div class="grid2">
+      <div class="card"><h3>Vehicul</h3><table class="kv" id="dash-veh"><tr><td class="muted">Rulați o scanare.</td></tr></table></div>
+      <div class="card"><h3>Rezumat coduri</h3><div id="dash-dtc" class="muted">Rulați o scanare.</div></div>
+    </div>
+    <div class="card"><h3>Progres scanare</h3><div class="progress"><div id="scan-bar"></div></div><div id="scan-step" class="muted"></div></div>
+  </section>
+
+  <!-- ANALIZĂ -->
+  <section id="tab-ai" class="tab">
+    <div class="row between"><h2>Analiză automată</h2>
+      <div class="row"><button id="btn-ai" class="primary needs-conn">🧠 Analizează vehiculul</button><button id="btn-ai-offline">Analizează ultima scanare</button></div>
+    </div>
+    <p class="muted">Combină codurile de eroare, monitoarele, freeze frame-ul, modulele Ford și un instantaneu de 6 s al datelor live (tensiune, temperatură, corecții combustibil, sonde lambda, ralanti). Rezultatul: probleme ordonate după gravitate, cu cauze probabile și pașii de verificare.</p>
+    <div id="ai-out"></div>
+  </section>
+
+  <!-- TESTE GHIDATE -->
+  <section id="tab-tests" class="tab">
+    <h2>Teste ghidate</h2>
+    <p class="muted">Urmați instrucțiunile pas cu pas. Nu efectuați testele în timpul mersului dacă necesită atenție la ecran — folosiți un ajutor sau vehicul staționar.</p>
+    <div id="tests-list" class="tiles"></div>
+    <div id="test-run" class="card hidden">
+      <div class="row between"><h3 id="test-title"></h3><button id="btn-test-abort" class="danger small">Abandonează</button></div>
+      <div id="test-say" class="note"></div>
+      <div id="test-live" class="tiles"></div>
+      <div class="progress"><div id="test-bar"></div></div>
+      <div class="row"><button id="btn-test-next" class="primary hidden">Continuă</button><button id="btn-test-stop" class="hidden">Oprește și evaluează</button></div>
+    </div>
+    <div id="test-result"></div>
+  </section>
+
+  <!-- TRIP & PERFORMANȚĂ -->
+  <section id="tab-trip" class="tab">
+    <div class="row between"><h2>Computer de bord și performanță</h2>
+      <div class="row"><button id="btn-trip-start" class="primary needs-conn">▶ Pornire trip</button><button id="btn-trip-stop" disabled>■ Oprire</button><button id="btn-trip-reset">↺ Reset</button></div>
+    </div>
+    <div class="tiles" id="trip-tiles"></div>
+    <p class="muted" id="trip-note"></p>
+    <div class="card">
+      <h3>Cronometru accelerare</h3>
+      <div class="row">
+        <select id="perf-mode"><option value="0-100">0 → 100 km/h</option><option value="0-60">0 → 60 km/h</option><option value="80-120">80 → 120 km/h (repriză)</option><option value="60-100">60 → 100 km/h (repriză)</option><option value="0-160">0 → 160 km/h</option></select>
+        <button id="btn-perf-arm" class="primary needs-conn">Armează</button><button id="btn-perf-cancel">Anulează</button>
+        <span id="perf-state" class="badge">inactiv</span>
+      </div>
+      <div class="tiles"><div class="tile big"><div class="n">Timp</div><div class="v" id="perf-time">—</div></div><div class="tile big"><div class="n">Viteză</div><div class="v" id="perf-speed">—</div></div></div>
+      <p class="note">⚠️ Folosiți doar pe circuit sau drum închis, în condiții legale și sigure. Precizia depinde de rata adaptorului (~0,1–0,2 s).</p>
+      <table class="tbl" id="perf-hist"></table>
+    </div>
+  </section>
+
+  <!-- CODURI -->
+  <section id="tab-dtc" class="tab">
+    <div class="row between">
+      <h2>Coduri de eroare (motor / OBD)</h2>
+      <div class="row">
+        <button id="btn-read-dtc" class="primary needs-conn">Citire coduri</button>
+        <button id="btn-clear-dtc" class="danger needs-conn">Ștergere coduri</button>
+      </div>
+    </div>
+    <p class="muted">Citește codurile memorate (Mode 03), în așteptare (Mode 07) și permanente (Mode 0A) de la toate ECU-urile OBD. Pentru ABS, airbag, bord etc. folosiți fila <b>Module Ford</b>.</p>
+    <div id="dtc-list"></div>
+    <div class="card"><h3>Căutare cod</h3>
+      <div class="row"><input id="dtc-search" placeholder="ex. P0420, P1131, U0100" maxlength="5"><button id="btn-dtc-search">Caută</button></div>
+      <div id="dtc-search-res"></div>
+    </div>
+  </section>
+
+  <!-- LIVE -->
+  <section id="tab-live" class="tab">
+    <div class="row between">
+      <h2>Date live</h2>
+      <div class="row">
+        <button id="btn-live-start" class="primary needs-conn">▶ Pornire</button>
+        <button id="btn-live-stop" disabled>■ Oprire</button>
+        <label class="chk"><input type="checkbox" id="live-rec"> Înregistrare CSV</label>
+        <button id="btn-live-csv" disabled>⬇ CSV</button>
+        <button id="btn-gauge">◔ Cadrane</button>
+        <button id="btn-hud">🖥 HUD</button>
+      </div>
+    </div>
+    <div class="row"><span class="muted">Rată: <b id="live-rate">0</b> cereri/s</span><span class="muted">Mostre înregistrate: <b id="live-count">0</b></span></div>
+    <div class="tiles" id="live-tiles"></div>
+    <div class="card"><h3>Grafic</h3><div class="row"><select id="chart-pid"></select><select id="chart-pid2"></select></div><canvas id="chart" height="220"></canvas></div>
+    <div class="card">
+      <div class="row between"><h3>Selectare parametri</h3>
+        <div class="row"><button id="btn-pid-all">Toate</button><button id="btn-pid-none">Niciunul</button><button id="btn-pid-basic">De bază</button><button id="btn-pid-reload" class="needs-conn">Reîncarcă PID suportate</button></div>
+      </div>
+      <div id="pid-picker" class="picker"><span class="muted">Conectați-vă pentru a vedea parametrii suportați de ECU.</span></div>
+    </div>
+  </section>
+
+  <!-- FREEZE FRAME -->
+  <section id="tab-ff" class="tab">
+    <div class="row between"><h2>Freeze frame (Mode 02)</h2><button id="btn-ff" class="primary needs-conn">Citire freeze frame</button></div>
+    <p class="muted">Instantaneul parametrilor motorului salvat de ECU în momentul apariției primului cod de eroare.</p>
+    <div id="ff-out"></div>
+  </section>
+
+  <!-- READINESS -->
+  <section id="tab-ready" class="tab">
+    <div class="row between"><h2>Monitoare readiness & teste</h2>
+      <div class="row"><button id="btn-ready" class="primary needs-conn">Citire monitoare</button><button id="btn-m06" class="needs-conn">Rezultate teste (Mode 06)</button></div>
+    </div>
+    <p class="muted">Monitoarele trebuie să fie „Complet” înainte de inspecția tehnică (ITP / emisii). După ștergerea codurilor sau deconectarea bateriei, rulați un ciclu de conducere (oraș + extraurban ~30 min).</p>
+    <div id="ready-out"></div>
+    <div id="m06-out"></div>
+  </section>
+
+  <!-- MODULE FORD -->
+  <section id="tab-mods" class="tab">
+    <div class="row between"><h2>Module Ford (diagnoză extinsă)</h2>
+      <div class="row">
+        <div class="seg" id="bus-sel"><button data-v="HS" class="active">HS-CAN 500k</button><button data-v="MS">MS-CAN 125k</button></div>
+        <button id="btn-mod-scan" class="primary needs-conn">Scanare module</button>
+        <button id="btn-mod-clear-all" class="danger needs-conn">Ștergere coduri toate</button>
+      </div>
+    </div>
+    <p class="muted">Interoghează modulele de pe magistrala CAN aleasă (PCM, TCM, ABS, airbag, servodirecție, bord, GEM, climă …) folosind UDS 0x19 / KWP 0x18. Funcționează doar pe vehicule CAN (Ford 2005+ Europa, 2008+ SUA).</p>
+    <div id="mods-out"></div>
+  </section>
+
+  <!-- PID EXTINSE -->
+  <section id="tab-ext" class="tab">
+    <h2>PID-uri extinse (Mode 22) și personalizate</h2>
+    <p class="note">⚠️ PID-urile Ford Mode 22 variază în funcție de motor, cutie și strategia software. Cele predefinite sunt experimentale; puteți adăuga propriile definiții (de ex. din documentația FORScan/Torque).</p>
+    <div id="ext-list"></div>
+    <div class="card">
+      <h3>Adaugă PID personalizat</h3>
+      <div class="form">
+        <label>Nume <input id="cp-name" placeholder="Temperatură ulei cutie"></label>
+        <label>Antet (modul) <input id="cp-tx" placeholder="7E0" maxlength="3"></label>
+        <label>Comandă <input id="cp-cmd" placeholder="221E1C"></label>
+        <label>Formulă (A,B,C… = octeți date) <input id="cp-formula" placeholder="(signed(A)*256+B)/16"></label>
+        <label>Unitate <input id="cp-unit" placeholder="°C"></label>
+      </div>
+      <div class="row"><button id="btn-cp-add" class="primary">Adaugă</button><button id="btn-ext-read" class="needs-conn">Citește toate o dată</button><label class="chk"><input type="checkbox" id="ext-in-live"> Include în Date live</label></div>
+    </div>
+  </section>
+
+  <!-- INFO VEHICUL -->
+  <section id="tab-info" class="tab">
+    <!-- carte de identitate vehicul -->
+    <div class="card veh-hero">
+      <div class="veh-top">
+        <div class="veh-id">
+          <div class="veh-model" id="veh-model">Vehicul necunoscut</div>
+          <div class="veh-sub" id="veh-sub">Conectați-vă la mașină sau introduceți VIN-ul mai jos</div>
+          <div class="veh-chips" id="veh-chips"></div>
+        </div>
+        <button id="btn-info" class="primary needs-conn">📡 Citește din mașină</button>
+      </div>
+      <div class="vin-box">
+        <span class="vin-label">VIN</span>
+        <input id="vin-in" class="mono" placeholder="17 caractere, de pe talon sau parbriz" maxlength="17" autocomplete="off" spellcheck="false">
+        <button id="btn-vin" class="primary">Verifică VIN</button>
+        <button id="btn-vin-copy" title="Copiază VIN-ul">📋</button>
+      </div>
+      <div id="vin-msg" class="vin-msg"></div>
+    </div>
+
+    <div class="seg subnav" id="info-sub">
+      <button data-v="overview" class="active">Prezentare</button>
+      <button data-v="docs">Documente</button>
+      <button data-v="service">Service</button>
+      <button data-v="check">Verificare istoric</button>
+    </div>
+
+    <!-- PREZENTARE -->
+    <div class="info-pane" data-pane="overview">
+      <div class="tiles" id="ov-tiles"></div>
+      <div class="card"><h3>Date vehicul</h3><table class="kv" id="info-out"></table></div>
+      <div class="card" id="vin-card">
+        <h3>🔎 Verificare VIN</h3>
+        <div id="vin-check"><p class="muted">Introduceți VIN-ul sus și apăsați „Verifică VIN” (sau citiți-l din mașină).</p></div>
+        <div id="vin-pos"></div>
+        <h3 class="sheet-sec">Verificare online</h3>
+        <div class="ext-list" id="vin-links"></div>
+      </div>
+    </div>
+
+    <!-- DOCUMENTE -->
+    <div class="info-pane hidden" data-pane="docs">
+      <p class="muted">Verificați pe site-ul oficial (VIN-ul se copiază la clic), apoi treceți aici data de expirare. Se salvează automat și primiți avertizare cu 30 de zile înainte.</p>
+      <div class="doc-grid">
+        <div class="card doc-card">
+          <div class="doc-head"><h3>🛣️ Rovinietă</h3><span id="st-rov" class="badge">—</span></div>
+          <label>Valabilă până la <input type="date" id="doc-rov-to"></label>
+          <a class="doc-link" href="https://www.erovinieta.ro/" target="_blank" rel="noopener noreferrer" data-copy="vin">Verifică pe erovinieta.ro ↗</a>
+        </div>
+        <div class="card doc-card">
+          <div class="doc-head"><h3>🛡️ RCA</h3><span id="st-rca" class="badge">—</span></div>
+          <label>Asigurător <input id="doc-rca-ins" placeholder="opțional"></label>
+          <label>Valabilă până la <input type="date" id="doc-rca-to"></label>
+          <a class="doc-link" href="https://www.baar.ro/" target="_blank" rel="noopener noreferrer" data-copy="vin">Verifică pe baar.ro ↗</a>
+        </div>
+        <div class="card doc-card">
+          <div class="doc-head"><h3>🔧 ITP</h3><span id="st-itp" class="badge">—</span></div>
+          <label>Efectuat la data <input type="date" id="doc-itp-date"></label>
+          <label>Stația ITP <input id="doc-itp-station" placeholder="ex. Service X, Cluj"></label>
+          <label>Kilometraj la ITP <input type="number" min="0" id="doc-itp-km" placeholder="km"></label>
+          <label>Valabil până la <input type="date" id="doc-itp-to"></label>
+          <a class="doc-link" href="https://www.rarom.ro/" target="_blank" rel="noopener noreferrer" data-copy="vin">Istoric ITP pe rarom.ro ↗</a>
+        </div>
+      </div>
+      <div id="km-check"></div>
+    </div>
+
+    <!-- SERVICE -->
+    <div class="info-pane hidden" data-pane="service">
+      <div class="row between">
+        <label class="inl">Kilometraj actual <input id="svc-km-now" type="number" min="0" placeholder="km" style="width:120px"></label>
+        <div class="row"><button id="btn-svc-new" class="primary">➕ Adaugă lucrare</button><button id="btn-svc-csv">⬇ Export</button></div>
+      </div>
+      <div id="svc-due"></div>
+      <div class="card hidden" id="svc-form-card">
+        <div class="form svc-form">
+          <label>Data <input id="svc-date" type="date"></label>
+          <label>Kilometraj <input id="svc-km" type="number" min="0" placeholder="km"></label>
+          <label>Tip lucrare <select id="svc-type">
+            <option>Revizie (ulei + filtre)</option><option>Distribuție (curea/lanț, pompă apă)</option><option>Frâne</option><option>Lichid frână</option>
+            <option>Ambreiaj / volantă</option><option>Suspensie / direcție</option><option>Baterie / electric</option><option>Anvelope</option>
+            <option>Răcire / climatizare</option><option>Injecție / turbo / EGR / DPF</option><option>Cutie de viteze</option><option>Evacuare / catalizator</option>
+            <option>Caroserie</option><option>ITP</option><option>Software / reprogramare</option><option>Altele</option></select></label>
+          <label>Cost (lei) <input id="svc-cost" type="number" min="0" step="0.01" placeholder="opțional"></label>
+          <label class="wide">Ce s-a făcut / piese <input id="svc-desc" placeholder="ex. ulei 5W-30, filtru ulei, aer, polen"></label>
+          <label>Service <input id="svc-shop" placeholder="opțional"></label>
+          <label>Următoarea la (km) <input id="svc-next-km" type="number" min="0" placeholder="propus automat"></label>
+          <label>Următoarea la (dată) <input id="svc-next-date" type="date"></label>
+        </div>
+        <div class="row"><button id="btn-svc-add" class="primary">Salvează</button><button id="btn-svc-cancel">Anulează</button><button id="btn-svc-dtc" class="small">Completează cu codurile reparate</button></div>
+      </div>
+      <div id="svc-list"></div>
+    </div>
+
+    <!-- VERIFICARE ISTORIC -->
+    <div class="info-pane hidden" data-pane="check">
+      <div class="card">
+        <div class="row between">
+          <div><h3>Verificare din mașină</h3><p class="muted">Coduri șterse recent, module înlocuite, kilometraj memorat în module. ~1 minut.</p></div>
+          <button id="btn-integrity" class="primary needs-conn">Pornește verificarea</button>
+        </div>
+        <div id="integrity-out"></div>
+      </div>
+      <div class="card">
+        <h3>Istoric oficial și rapoarte</h3>
+        <div class="ext-list" id="ext-history-links"></div>
+        <p class="muted">💡 Orice dealer Ford poate lista după VIN reparațiile în garanție, rechemările și reprogramările (sistemul Ford OASIS).</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- TERMINAL -->
+  <section id="tab-term" class="tab">
+    <h2>Terminal ELM327</h2>
+    <p class="muted">Trimiteți comenzi AT sau OBD brute. Exemple: <code>ATRV</code>, <code>ATDP</code>, <code>0100</code>, <code>ATSH760</code> apoi <code>1902FF</code>.</p>
+    <pre id="term-out" class="term"></pre>
+    <div class="row"><input id="term-in" class="mono" placeholder="Comandă…" autocomplete="off"><button id="btn-term" class="primary needs-conn">Trimite</button><button id="btn-term-clear">Golește</button></div>
+  </section>
+
+  <!-- RAPORT -->
+  <section id="tab-rep" class="tab">
+    <h2>Raport și jurnal</h2>
+    <div class="row">
+      <button id="btn-rep-html" class="primary">⬇ Raport diagnoză (HTML)</button>
+      <button id="btn-rep-print">🖨 Tipărire / PDF</button>
+      <button id="btn-rep-json">⬇ Date brute (JSON)</button>
+      <button id="btn-log-dl">⬇ Jurnal comunicație</button>
+    </div>
+    <div class="card"><h3>Previzualizare raport</h3><div id="rep-preview" class="report"></div></div>
+    <div class="card"><h3>Jurnal comunicație</h3><pre id="log" class="term small"></pre></div>
+  </section>
+
+  <!-- ISTORIC -->
+  <section id="tab-hist" class="tab">
+    <div class="row between"><h2>Istoric scanări</h2>
+      <div class="row"><button id="btn-hist-save" class="primary">💾 Salvează scanarea curentă</button><button id="btn-hist-export">⬇ Export</button><label class="btnlike">⬆ Import<input type="file" id="hist-import" accept="application/json" hidden></label></div>
+    </div>
+    <p class="muted">Scanările se păstrează doar pe acest dispozitiv (browser). Selectați două scanări ale aceluiași vehicul pentru a vedea ce s-a rezolvat după reparație.</p>
+    <div id="hist-list"></div>
+    <div id="hist-cmp"></div>
+  </section>
+
+  <!-- SETĂRI -->
+  <section id="tab-set" class="tab">
+    <h2>Setări</h2>
+    <div class="card form">
+      <label>Viteză port serial (baud) — pentru Bluetooth e ignorată, pentru USB de obicei 38400 sau 115200
+        <select id="set-baud"><option>9600</option><option selected>38400</option><option>57600</option><option>115200</option><option>230400</option><option>500000</option></select></label>
+      <label>Timeout comandă (ms) <input id="set-timeout" type="number" min="500" max="20000" value="4000"></label>
+      <label>Interval minim între citiri live (ms) <input id="set-live-int" type="number" min="0" max="5000" value="0"></label>
+      <label>Comenzi comutare pe MS-CAN (una pe linie)
+        <textarea id="set-ms" rows="3">ATSPB
+ATPB8104</textarea></label>
+      <label>Comenzi revenire pe HS-CAN (una pe linie)
+        <textarea id="set-hs" rows="2">ATSP6</textarea></label>
+      <p class="muted">Adaptor ELM327 modificat cu comutator: mutați comutatorul pe MS-CAN înainte de scanarea MS. OBDLink MX/MX+ (STN): folosiți comenzile STN specifice adaptorului (consultați manualul OBDLink, de ex. selectarea protocolului MS-CAN Ford).</p>
+      <label class="chk"><input type="checkbox" id="set-multipid" checked> Cereri multi-PID pe CAN (mai rapid)</label>
+      <div class="row"><button id="btn-set-save" class="primary">Salvează</button></div>
+    </div>
+    <div class="card">
+      <h3>Despre</h3>
+      <p>FordDiag OBD2 — aplicație de diagnoză OBD-II/EOBD cu funcții extinse pentru Ford 2007–2010 (Focus Mk2, Mondeo Mk4, S-Max/Galaxy, C-Max, Kuga, Fiesta Mk6/Mk7, Fusion, Transit, F-150, Escape, Fusion SUA etc.).</p>
+      <p class="muted">Aplicația nu efectuează programări, codări sau proceduri de service dealer (PATS, injectoare, DPF forțat). Ștergerea codurilor nu repară defectul. Utilizați pe propria răspundere; nu manevrați aplicația în timpul mersului.</p>
+    </div>
+  </section>
+</main>
+
+<div id="hud" class="hud hidden">
+  <div class="hud-bar"><button id="hud-mirror">⇋ Oglindire (parbriz)</button><button id="hud-close">✕ Închide</button></div>
+  <div id="hud-vals" class="hud-vals"></div>
+</div>
+<div id="sheet" class="modal hidden"><div class="modal-box sheet-box">
+  <div class="row between"><h2 id="sheet-title" class="mono"></h2><button id="sheet-close">✕</button></div>
+  <div id="sheet-body"></div>
+</div></div>
+<div id="toast" class="toast"></div>
+<div id="modal" class="modal hidden"><div class="modal-box"><p id="modal-text"></p><div class="row end"><button id="modal-no">Anulează</button><button id="modal-yes" class="danger">Confirmă</button></div></div></div>
+
+<script src="js/transport.js"></script>
+<script src="js/elm327.js"></script>
+<script src="js/obd.js"></script>
+<script src="js/ford.js"></script>
+<script src="js/dtcdb.js"></script>
+<script src="js/knowledge.js"></script>
+<script src="js/dtcinfo.js"></script>
+<script src="js/analysis.js"></script>
+<script src="js/guided.js"></script>
+<script src="js/trip.js"></script>
+<script src="js/history.js"></script>
+<script src="js/app.js"></script>
+<script src="js/app-extra.js"></script>
+<script src="js/vehicle-history.js"></script>
+</body>
+</html>
